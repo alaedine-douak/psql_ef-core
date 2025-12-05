@@ -11,4 +11,4 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 6772AlAd@
     volumes:
-      - ./Db:/var/lib/postgresql/data
+      - ./db:/var/lib/postgresql/data
