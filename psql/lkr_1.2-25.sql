@@ -133,3 +133,80 @@ select
 
 --
 
+-- character types
+
+create table char_example(
+   ch char(4) -- character | char -> fixed length, if input is less than defined length, it'll be padded with spaces
+);
+
+insert into char_example(ch) values ('ab');
+
+select ch, char_length(ch) from char_example;
+
+-- varchar | character varying -> variable length, no padding with spaces
+
+create table varchar_example(
+   username character varying
+);
+
+insert into varchar_example(username) values ('username_example');
+
+select username, char_length(username) from varchar_example;
+
+create table varchar_length_example(
+   username character varying(10)
+);
+
+insert into varchar_length_example(username) values ('user1');
+
+select username, char_length(username) from varchar_length_example;
+
+-- text -> variable unlimited length
+
+-- check constraint
+
+drop table check_example;
+
+create table check_example(
+   -- column level constraints
+   price numeric constraint price_must_be_positive check (price > 0),
+   abbr text check (length(abbr) = 5)
+);
+
+create table check_example(
+   price numeric check (price > 0),
+   discount_price numeric check (discount_price > 0),
+   abbr text,
+   -- table level constraints 
+   check (length(abbr) = 5),
+   constraint valid_discount check (discount_price < price)
+);
+
+insert into check_example(price, discount_price, abbr) values (3, 1, 'foooo');
+
+select * from check_example;
+
+--
+
+-- domain constraints
+-- 02133
+-- 09871-6543
+
+drop table addr_example;
+drop domain if exists us_postal_code;
+
+create domain us_postal_code as text constraint format_check
+check (
+   value ~ '^\d{5}$'
+   or value ~ '^\d{5}-\d{4}$'
+);
+
+create table addr_example(
+   street text,
+   postal_code us_postal_code
+);
+
+insert into addr_example(street, postal_code) values ('main st', '02133-9811');
+
+select * from addr_example;
+
