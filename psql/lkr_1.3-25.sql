@@ -111,3 +111,141 @@ select
    pg_column_size(product_id) -- 16
 from orders;
 
+
+---
+
+-- boolean
+
+drop table if exists boolean_example;
+
+create table boolean_example(
+   status boolean
+);
+
+insert into boolean_example(status) values
+(TRUE), 
+(FALSE),
+('true'),
+('false'),
+('1'),
+('0'),
+('t'),
+('f'),
+('on'),
+('off'),
+(NULL); -- null essentially means unknown / missing value
+
+
+select * from boolean_example;
+
+select 1::boolean;
+select '1'::boolean;
+
+select pg_typeof(1::boolean), pg_typeof(1::integer);
+
+select pg_column_size(1::boolean),
+pg_column_size(1::integer);
+
+---
+
+-- enum
+
+-- stored as an interger.
+
+
+create type mood as enum ('sad', 'ok', 'happy');
+
+create table person (
+   name text,
+   current_mood mood
+);
+
+insert into person (name, current_mood) values
+('Alice', 'happy'),
+('Bob', 'sad'),
+('Charlie', 'ok');
+
+select * from person;
+
+-- The ordering of the values in an enum type is the order in which the values were listed when the type was created
+
+select * from person order by current_mood;
+
+create type size_type as enum (
+   'x-small',
+   'small',
+   'medium',
+   'large',
+   'x-large'
+);
+
+drop table if exists tshirts;
+
+create table tshirts (
+   size size_type,
+   price numeric
+);
+
+insert into tshirts (size, price) values
+('medium', 19.99),
+('large', 21.99),
+('small', 17.99),
+('x-large', 23.99),
+('x-small', 15.99);
+
+select * from tshirts order by size;
+
+insert into tshirts (size, price) values
+('medium', 18.99);
+
+insert into tshirts (size, price) values
+('xx-large', 25.99); -- error: invalid input value for enum size_type: "xx-large"
+
+alter type size_type add value 'xx-large';
+
+alter type size_type add value 'medium-plus' before 'large';
+
+insert into tshirts (size, price) values
+('medium-plus', 20.99);
+
+-- removing value from enum is not supported directly. 
+-- need to create new type, migrate data, drop old type, rename new type.
+
+create type size_type2 as enum (
+   'xs',
+   's',
+   'm',
+   'l',
+   'xl',
+   'xxl'
+);
+
+alter table tshirts 
+alter column size type size_type2
+using 
+case size
+   when 'x-small' then 'xs'::size_type2
+   when 'small' then 's'::size_type2
+   when 'medium' then 'm'::size_type2
+   when 'large' then 'l'::size_type2
+   when 'x-large' then 'xl'::size_type2
+   when 'xx-large' then 'xxl'::size_type2
+end;
+
+drop type size_type;
+
+alter type size_type2 rename to size_type;
+
+alter type mood add value 'afraid' before 'ok';
+alter type mood add value 'melancholic' before 'ok';
+alter type mood add value 'anxious' after 'sad';
+
+select * from pg_catalog.pg_enum;
+
+select * from pg_catalog.pg_enum where enumtypid = '16553' order by enumsortorder;
+
+alter type mood rename value 'ok' to 'neutral';
+
+select enum_range(null::mood); -- {sad,anxious,afraid,melancholic,neutral,happy}
+
+select enum_range('anxious'::mood, 'neutral'::mood); -- {anxious,afraid,melancholic,neutral}
